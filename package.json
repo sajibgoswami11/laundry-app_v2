@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbo",
-    "build": "prisma generate && prisma db push && next build", 
+    "build": "prisma generate && prisma db push && cp prisma/dev.db ./ && next build", 
     "start": "next start",
     "lint": "next lint",
     "prisma:seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
