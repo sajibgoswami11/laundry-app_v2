@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbo",
-    "build": "prisma generate && prisma migrate reset --force && cp prisma/dev.db .next/ && next build", 
+    "build": "prisma generate && prisma migrate reset --force && cp prisma/dev.db ./ && next build", 
     "start": "next start",
     "lint": "next lint"
     
