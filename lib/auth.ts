@@ -26,32 +26,45 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error("Invalid credentials");
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            console.error("Authorization error: Missing email or password.");
+            throw new Error("Email and password are required.");
+          }
+
+          const user = await prisma.user.findUnique({
+            where: {
+              email: credentials.email,
+            },
+          });
+
+          if (!user) {
+            console.error(`Authorization error: No user found for email ${credentials.email}`);
+            throw new Error("No user found with this email.");
+          }
+
+          if (!user.password) {
+            console.error(`Authorization error: User ${credentials.email} has no password set.`);
+            throw new Error("This account does not have a password set.");
+          }
+
+          const isCorrectPassword = await compare(credentials.password, user.password);
+
+          if (!isCorrectPassword) {
+            console.error(`Authorization error: Incorrect password for email ${credentials.email}`);
+            throw new Error("Incorrect password.");
+          }
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+          };
+        } catch (error) {
+          console.error("Unexpected authorization error:", (error as Error).message);
+          throw new Error("Invalid credentials.");
         }
-
-        const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email,
-          },
-        });
-
-        if (!user || !user.password) {
-          throw new Error("Invalid credentials");
-        }
-
-        const isCorrectPassword = await compare(credentials.password, user.password);
-
-        if (!isCorrectPassword) {
-          throw new Error("Invalid credentials");
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-        };
       },
     }),
   ],
@@ -71,8 +84,10 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: "/login",
+    error: "/login", // Redirect to login page on error
   },
   session: {
     strategy: "jwt",
   },
-}; 
+  debug: true, // Enable debug mode for detailed logs
+};

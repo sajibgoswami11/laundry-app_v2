@@ -15,6 +15,7 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
+          console.error("Authorization failed: Missing email or password");
           throw new Error("Invalid credentials");
         }
 
@@ -25,6 +26,7 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!user || !user.password) {
+          console.error(`Authorization failed: User not found for email ${credentials.email}`);
           throw new Error("User not found");
         }
 
@@ -34,9 +36,11 @@ export const authOptions: NextAuthOptions = {
         );
 
         if (!isPasswordValid) {
+          console.error("Authorization failed: Invalid password");
           throw new Error("Invalid password");
         }
 
+        console.log(`Authorization successful for user ${user.email}`);
         return {
           id: user.id,
           email: user.email,
@@ -72,4 +76,4 @@ export const authOptions: NextAuthOptions = {
 };
 
 const handler = NextAuth(authOptions);
-export { handler as GET, handler as POST }; 
+export { handler as GET, handler as POST };

@@ -50,12 +50,14 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError("Invalid email or password");
+        console.error("Sign-in error:", result.error);
+        setError(result.error === "Invalid credentials" ? "Invalid email or password." : "An unexpected error occurred.");
       } else {
         router.push(callbackUrl);
       }
     } catch (error) {
-      setError("An error occurred. Please try again.");
+      console.error("Unexpected sign-in error:", error);
+      setError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }
