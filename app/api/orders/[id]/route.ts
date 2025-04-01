@@ -60,8 +60,9 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { shopId, items } = body;
-
+    console.log("Order items to be created:", request.body);
+    const { shopId, items, pickupTime, deliveryTime } = body;
+ 
     if (!shopId || !Array.isArray(items) || items.length === 0) {
       return new NextResponse(
         "Invalid data: shopId and items are required",
@@ -91,11 +92,17 @@ export async function POST(request: Request) {
           })),
         },
         total: items.reduce((sum: number, item: any) => sum + item.price * item.quantity, 0),
-        pickupTime: new Date(), // Replace with actual pickup time if available
-        deliveryTime: new Date(), // Replace with actual delivery time if available
+        pickupTime: pickupTime, // Replace with actual pickup time if available
+        deliveryTime: deliveryTime, // Replace with actual delivery time if available
       },
       include: {
-        items: true,
+        user: true,
+        shop: true,
+        items: {
+          include: {
+            service: true,
+          },
+        },
       },
     });
 

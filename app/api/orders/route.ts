@@ -12,8 +12,8 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
+    console.log("Order items to be created:", request.body);
     const { shopId, items, pickupTime, deliveryTime } = body;
-
     // Validate required fields
     if (!shopId || !items || !pickupTime || !deliveryTime) {
       return new NextResponse("Missing required fields", { status: 400 });
@@ -70,10 +70,10 @@ export async function POST(request: Request) {
         shop: true,
         items: {
           include: {
-            service: true
-          }
-        }
-      }
+            service: true,
+          },
+        },
+      },
     });
 
     return NextResponse.json(order);
@@ -198,4 +198,4 @@ export async function GET(req: Request) {
       { status: 500 }
     );
   }
-} 
+}

@@ -3,6 +3,7 @@
 import { useCart } from "@/contexts/CartContext";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { userAgent } from "next/server";
 
 interface CartProps {
   shopId: string;
@@ -22,24 +23,30 @@ export default function Cart({ shopId, onClose }: CartProps) {
     }
 
     try {
+      const orderJson = {
+        shopId,
+        items: items.map((item) => ({
+          serviceId: item.serviceId,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+        pickupTime,
+        deliveryTime,
+      };
+      console.log("Order to be sent:", shopId); // Debugging log
+  
+  
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          shopId,
-          items: items.map((item) => ({
-            serviceId: item.serviceId,
-            quantity: item.quantity,
-            price: item.price,
-          })),
-          pickupTime,
-          deliveryTime,
-        }),
+        body: JSON.stringify({orderJson   }),
       });
 
       if (!response.ok) {
+        const errorBody = await response.text(); // Log the response body for debugging
+        console.error("Server error response:", errorBody);
         throw new Error("Failed to create order");
       }
 
@@ -155,4 +162,4 @@ export default function Cart({ shopId, onClose }: CartProps) {
       </div>
     </div>
   );
-} 
+}
