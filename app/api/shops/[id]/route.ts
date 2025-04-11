@@ -47,8 +47,10 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { id } = await Promise.resolve(params);
+    
     const shop = await prisma.shop.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         services: true, // Include related services if needed
       },

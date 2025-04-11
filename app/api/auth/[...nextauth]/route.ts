@@ -5,6 +5,24 @@ import bcrypt from "bcryptjs";
 import NextAuth from "next-auth/next";
 import { UserRole } from "@prisma/client";
 
+// Debugging environment variables
+if (!process.env.NEXTAUTH_SECRET) {
+  console.error("NEXTAUTH_SECRET is not set in the environment variables.");
+}
+if (!process.env.DATABASE_URL) {
+  console.error("DATABASE_URL is not set in the environment variables.");
+}
+
+// Debugging Prisma connection
+(async () => {
+  try {
+    await prisma.$connect();
+    console.log("Prisma connected successfully.");
+  } catch (error) {
+    console.error("Failed to connect to Prisma:", error);
+  }
+})();
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -27,6 +45,7 @@ export const authOptions: NextAuthOptions = {
 
         if (!user || !user.password) {
           console.error(`Authorization failed: User not found for email ${credentials.email}`);
+          console.error("Ensure the user exists in the database and the email is correct.");
           throw new Error("User not found");
         }
 
@@ -37,6 +56,7 @@ export const authOptions: NextAuthOptions = {
 
         if (!isPasswordValid) {
           console.error("Authorization failed: Invalid password");
+          console.error("Ensure the password is hashed correctly in the database.");
           throw new Error("Invalid password");
         }
 
