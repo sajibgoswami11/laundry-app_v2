@@ -3,18 +3,32 @@
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Bars3Icon } from "@heroicons/react/24/outline";
 
-export default function DashboardNav() {
+interface DashboardNavProps {
+  onMenuClick?: () => void;
+}
+
+export default function DashboardNav({ onMenuClick }: DashboardNavProps) {
   const { data: session } = useSession();
   const pathname = usePathname();
 
   const isActive = (path: string) => pathname === path;
 
   return (
-    <nav className="bg-white shadow-sm">
+    <nav className="bg-white border-b border-gray-100 relative z-30 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          <div className="flex">
+          <div className="flex items-center">
+            {/* Hamburger Toggle - Mobile Only */}
+            <button
+              onClick={onMenuClick}
+              className="md:hidden p-2 rounded-xl text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all mr-2"
+              aria-label="Open sidebar"
+            >
+              <Bars3Icon className="h-6 w-6" />
+            </button>
+
             <div className="flex-shrink-0 flex items-center">
               <Link href="/" className="text-xl font-bold text-indigo-600">
                 LaundryApp
@@ -23,86 +37,13 @@ export default function DashboardNav() {
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
               <Link
                 href="/dashboard"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  isActive("/dashboard")
-                    ? "border-indigo-500 text-gray-900"
-                    : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                }`}
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive("/dashboard")
+                  ? "border-indigo-500 text-gray-900"
+                  : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                  }`}
               >
                 Dashboard
               </Link>
-              {session?.user.role === "CUSTOMER" && (
-                <>
-                  <Link
-                    href="/dashboard/user/orders"
-                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                      isActive("/dashboard/user/orders")
-                        ? "border-indigo-500 text-gray-900"
-                        : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                    }`}
-                  >
-                    My Orders
-                  </Link>
-                  <Link
-                    href="/dashboard/user/shops"
-                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                      isActive("/dashboard/user/shops")
-                        ? "border-indigo-500 text-gray-900"
-                        : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                    }`}
-                  >
-                    Find Shops
-                  </Link>
-                </>
-              )}
-              {session?.user.role === "SHOP_OWNER" && (
-                <>
-                  <Link
-                    href="/dashboard/shop/orders"
-                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                      isActive("/dashboard/shop/orders")
-                        ? "border-indigo-500 text-gray-900"
-                        : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                    }`}
-                  >
-                    Orders
-                  </Link>
-                  <Link
-                    href="/dashboard/shop/services"
-                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                      isActive("/dashboard/shop/services")
-                        ? "border-indigo-500 text-gray-900"
-                        : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                    }`}
-                  >
-                    Services
-                  </Link>
-                </>
-              )}
-              {session?.user.role === "ADMIN" && (
-                <>
-                  <Link
-                    href="/dashboard/admin/users"
-                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                      isActive("/dashboard/admin/users")
-                        ? "border-indigo-500 text-gray-900"
-                        : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                    }`}
-                  >
-                    Users
-                  </Link>
-                  <Link
-                    href="/dashboard/admin/shops"
-                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                      isActive("/dashboard/admin/shops")
-                        ? "border-indigo-500 text-gray-900"
-                        : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                    }`}
-                  >
-                    Shops
-                  </Link>
-                </>
-              )}
             </div>
           </div>
           <div className="flex items-center">
@@ -113,7 +54,7 @@ export default function DashboardNav() {
                 </span>
                 <button
                   onClick={() => signOut()}
-                  className="text-sm text-gray-500 hover:text-gray-700"
+                  className="text-sm text-gray-500 hover:text-gray-700 font-medium"
                 >
                   Sign out
                 </button>
@@ -122,6 +63,6 @@ export default function DashboardNav() {
           </div>
         </div>
       </div>
-    </nav>
+    </nav >
   );
-} 
+}

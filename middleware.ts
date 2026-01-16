@@ -27,7 +27,7 @@ export default withAuth(
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
-    if (path.startsWith("/dashboard/user") && token.role !== "CUSTOMER") {
+    if (path.startsWith("/dashboard/customer") && token.role !== "CUSTOMER") {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 

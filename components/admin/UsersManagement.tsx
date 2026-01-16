@@ -62,92 +62,120 @@ export default function UsersManagement() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center">
+      <div className="flex items-center justify-center p-12">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white shadow rounded-lg">
-      <div className="px-4 py-5 sm:p-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Users Management</h2>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative mb-4">
-            {error}
-          </div>
-        )}
-
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Phone
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Role
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Joined
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {users.map((user) => (
-                <tr key={user.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {user.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {user.email}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {user.phone || "N/A"}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        user.role === "ADMIN"
-                          ? "bg-purple-100 text-purple-800"
-                          : user.role === "SHOP_OWNER"
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-green-100 text-green-800"
-                      }`}
-                    >
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {new Date(user.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <select
-                      value={user.role}
-                      onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                    >
-                      <option value="CUSTOMER">Customer</option>
-                      <option value="SHOP_OWNER">Shop Owner</option>
-                      <option value="ADMIN">Admin</option>
-                    </select>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <div>
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-2xl relative mb-8 shadow-sm">
+          {error}
         </div>
+      )}
+
+      {/* Desktop Table Layout */}
+      <div className="hidden xl:block overflow-x-auto rounded-2xl border border-gray-100 shadow-sm">
+        <table className="min-w-full divide-y divide-gray-100">
+          <thead className="bg-gray-50/50">
+            <tr>
+              <th className="px-6 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Name</th>
+              <th className="px-6 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Email</th>
+              <th className="px-6 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Phone</th>
+              <th className="px-6 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Role</th>
+              <th className="px-6 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Joined</th>
+              <th className="px-6 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-50">
+            {users.map((user) => (
+              <tr key={user.id} className="hover:bg-slate-50/50 transition-colors duration-200">
+                <td className="px-6 py-5 whitespace-nowrap text-sm font-bold text-gray-900">{user.name}</td>
+                <td className="px-6 py-5 whitespace-nowrap text-sm font-medium text-gray-600">{user.email}</td>
+                <td className="px-6 py-5 whitespace-nowrap text-sm font-medium text-gray-500">{user.phone || "—"}</td>
+                <td className="px-6 py-5 whitespace-nowrap text-sm">
+                  <span
+                    className={`inline-flex items-center px-4 py-1 rounded-xl text-xs font-bold border shadow-sm ${user.role === "ADMIN"
+                      ? "bg-purple-50 text-purple-700 border-purple-100"
+                      : user.role === "SHOP_OWNER"
+                        ? "bg-blue-50 text-blue-700 border-blue-100"
+                        : "bg-emerald-50 text-emerald-700 border-emerald-100"
+                      }`}
+                  >
+                    {user.role}
+                  </span>
+                </td>
+                <td className="px-6 py-5 whitespace-nowrap text-sm font-medium text-gray-500">
+                  {new Date(user.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                </td>
+                <td className="px-6 py-5 whitespace-nowrap text-sm">
+                  <select
+                    value={user.role}
+                    onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                    className="block w-full pl-4 pr-10 py-2 text-sm font-bold border-gray-100 bg-gray-50 rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all cursor-pointer"
+                  >
+                    <option value="CUSTOMER">Customer</option>
+                    <option value="SHOP_OWNER">Shop Owner</option>
+                    <option value="ADMIN">Admin</option>
+                  </select>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Mobile/Tablet Card Layout */}
+      <div className="xl:hidden space-y-6">
+        {users.map((user) => (
+          <div key={user.id} className="bg-white border border-gray-100 rounded-[2rem] p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-lg font-black text-gray-900">{user.name}</h3>
+                <p className="text-sm font-medium text-gray-500">{user.email}</p>
+              </div>
+              <span
+                className={`inline-flex items-center px-4 py-1 rounded-xl text-[10px] font-bold border shadow-sm ${user.role === "ADMIN"
+                  ? "bg-purple-50 text-purple-700 border-purple-100"
+                  : user.role === "SHOP_OWNER"
+                    ? "bg-blue-50 text-blue-700 border-blue-100"
+                    : "bg-emerald-50 text-emerald-700 border-emerald-100"
+                  }`}
+              >
+                {user.role}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              <div className="space-y-1">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Phone</p>
+                <p className="text-sm font-bold text-gray-700 bg-gray-50 p-3 rounded-xl border border-gray-50">{user.phone || "—"}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Joined</p>
+                <p className="text-sm font-bold text-gray-700 bg-gray-50 p-3 rounded-xl border border-gray-50">
+                  {new Date(user.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-gray-50">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-2">Change Role</p>
+              <select
+                value={user.role}
+                onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                className="block w-full p-4 bg-gray-900 text-white border-0 rounded-2xl text-sm font-bold focus:ring-offset-2 focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer"
+              >
+                <option value="CUSTOMER">Customer</option>
+                <option value="SHOP_OWNER">Shop Owner</option>
+                <option value="ADMIN">Admin</option>
+              </select>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
-} 
+}

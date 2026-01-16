@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== "SHOP_OWNER") {
+    if (!session || (session.user.role !== "SHOP_OWNER" && session.user.role !== "ADMIN")) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -14,16 +14,26 @@ export async function POST(req: Request) {
     }
 
     const data = await req.json();
-    const { name, address, phone, email, description } = data;
+    const { name, address, phone, email, description, ownerId } = data;
+
+    // Use provided ownerId if admin, otherwise use session user id
+    const targetOwnerId = session.user.role === "ADMIN" ? ownerId : session.user.id;
+
+    if (!targetOwnerId) {
+      return NextResponse.json(
+        { error: "Owner ID is required" },
+        { status: 400 }
+      );
+    }
 
     // Check if user already has a shop
     const existingShop = await prisma.shop.findUnique({
-      where: { ownerId: session.user.id },
+      where: { ownerId: targetOwnerId },
     });
 
     if (existingShop) {
       return NextResponse.json(
-        { error: "You already have a registered shop" },
+        { error: "This user already has a registered shop" },
         { status: 400 }
       );
     }
@@ -35,8 +45,8 @@ export async function POST(req: Request) {
         phone,
         email,
         description,
-        ownerId: session.user.id,
-        isApproved: false, // Admin needs to approve the shop
+        ownerId: targetOwnerId,
+        isApproved: session.user.role === "ADMIN", // Auto-approve if created by admin
       },
       include: {
         owner: {

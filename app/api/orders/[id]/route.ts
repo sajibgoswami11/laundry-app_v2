@@ -15,27 +15,38 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { id } = params;
+    const { id } = await params;
+    const { status, pickupTime, deliveryTime } = body;
 
-    // Find the order and verify ownership
-    const order = await prisma.order.findFirst({
-      where: {
-        id,
-        userId: session.user.id,
-      },
+    // Find the order
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: { shop: true },
     });
 
     if (!order) {
       return new NextResponse("Order not found", { status: 404 });
     }
 
-    // Update the order with the new times
+    // Verify ownership/permissions
+    const isCustomer = order.userId === session.user.id;
+    const isShopOwner = order.shop.ownerId === session.user.id;
+    const isAdmin = session.user.role === "ADMIN";
+
+    if (!isCustomer && !isShopOwner && !isAdmin) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    // Prepare update data
+    const updateData: any = {};
+    if (status) updateData.status = status;
+    if (pickupTime) updateData.pickupTime = new Date(pickupTime);
+    if (deliveryTime) updateData.deliveryTime = new Date(deliveryTime);
+
+    // Update the order
     const updatedOrder = await prisma.order.update({
       where: { id },
-      data: {
-        pickupTime: body.pickupTime,
-        deliveryTime: body.deliveryTime,
-      },
+      data: updateData,
     });
 
     return NextResponse.json(updatedOrder);

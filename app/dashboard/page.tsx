@@ -24,7 +24,7 @@ export default function DashboardPage() {
         router.push("/dashboard/shop");
         break;
       case "CUSTOMER":
-        router.push("/dashboard/user");
+        router.push("/dashboard/customer");
         break;
       default:
         router.push("/login");

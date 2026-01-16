@@ -4,53 +4,36 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import DashboardNav from "@/components/DashboardNav";
+import ShopSidebar from "@/components/ShopSidebar";
+import {
+  InboxIcon as PackageIcon,
+  ClipboardDocumentListIcon as ClipboardListIcon,
+  CurrencyDollarIcon,
+  ClockIcon
+} from "@heroicons/react/24/outline";
 
-interface Order {
-  id: string;
-  total: number;
-  status: string;
-  pickupTime: string;
-  deliveryTime: string;
-  createdAt: string;
-  user: {
-    name: string;
-    email: string;
-  };
-  items: {
-    quantity: number;
-    price: number;
-    service: {
-      name: string;
-    };
-  }[];
-}
-
-interface Service {
-  id: string;
-  name: string;
-  description: string | null;
-  price: number;
-}
-
-interface NewService {
-  name: string;
-  description: string;
-  price: number;
+interface Stats {
+  totalOrders: number;
+  pendingOrders: number;
+  totalServices: number;
+  estimatedRevenue: number;
 }
 
 export default function ShopDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [services, setServices] = useState<Service[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showAddService, setShowAddService] = useState(false);
-  const [newService, setNewService] = useState<NewService>({
-    name: "",
-    description: "",
-    price: 0,
+  const [stats, setStats] = useState<Stats>({
+    totalOrders: 0,
+    pendingOrders: 0,
+    totalServices: 0,
+    estimatedRevenue: 0,
   });
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -60,320 +43,126 @@ export default function ShopDashboard() {
       return;
     }
 
-    const fetchData = async () => {
+    const fetchStats = async () => {
       try {
-        console.log("Fetching data for shop owner:", session?.user?.id);
-
         const [ordersRes, servicesRes] = await Promise.all([
-          fetch("/api/orders", {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }),
-          fetch("/api/shops/services", {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }),
+          fetch("/api/orders"),
+          fetch("/api/shops/services")
         ]);
 
-        console.log("Orders response status:", ordersRes.status);
-        console.log("Services response status:", servicesRes.status);
+        const orders = await ordersRes.json();
+        const services = await servicesRes.json();
 
-        if (!ordersRes.ok) {
-          const errorData = await ordersRes.json();
-          console.error("Orders API error:", errorData);
-          throw new Error(errorData.error || "Failed to fetch orders");
-        }
-
-        if (!servicesRes.ok) {
-          const errorData = await servicesRes.json();
-          console.error("Services API error:", errorData);
-          throw new Error(errorData.error || "Failed to fetch services");
-        }
-
-        const [ordersData, servicesData] = await Promise.all([
-          ordersRes.json(),
-          servicesRes.json(),
-        ]);
-
-        console.log("Fetched orders:", ordersData);
-        console.log("Fetched services:", servicesData);
-
-        setOrders(ordersData);
-        setServices(servicesData);
+        setStats({
+          totalOrders: orders.length,
+          pendingOrders: orders.filter((o: any) => o.status === "PENDING").length,
+          totalServices: services.length,
+          estimatedRevenue: orders.reduce((acc: number, o: any) => acc + o.total, 0)
+        });
       } catch (error) {
-        console.error("Error fetching data:", error);
-        setError(
-          error instanceof Error
-            ? error.message
-            : "Error loading data. Please try again later."
-        );
+        console.error("Error fetching stats:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchData();
+    fetchStats();
   }, [session, status, router]);
 
-  const handleStatusUpdate = async (orderId: string, newStatus: string) => {
-    try {
-      const response = await fetch(`/api/orders/${orderId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update order status");
-      }
-
-      const updatedOrder = await response.json();
-      setOrders((prev) =>
-        prev.map((order) =>
-          order.id === orderId ? { ...order, status: updatedOrder.status } : order
-        )
-      );
-    } catch (error) {
-      console.error("Error updating order:", error);
-      setError(error instanceof Error ? error.message : "Error updating order status. Please try again.");
-    }
-  };
-
-  const handleAddService = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const response = await fetch("/api/shops/services", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newService),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to add service");
-      }
-
-      const service = await response.json();
-      setServices((prev) => [...prev, service]);
-      setShowAddService(false);
-      setNewService({ name: "", description: "", price: 0 });
-    } catch (error) {
-      console.error("Error adding service:", error);
-      setError(error instanceof Error ? error.message : "Error adding service. Please try again.");
-    }
-  };
-
-  if (status === "loading" || isLoading) {
+  if (!mounted || status === "loading" || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50/50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <DashboardNav />
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="bg-white shadow rounded-lg p-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-6">
-              Shop Dashboard
-            </h1>
+    <div className="max-w-7xl mx-auto">
+      <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight mb-8">Shop Overview</h1>
 
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative mb-6">
-                {error}
-              </div>
-            )}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-10">
+        <StatCard
+          title="Total Orders"
+          value={stats.totalOrders}
+          icon={PackageIcon}
+          color="indigo"
+        />
+        <StatCard
+          title="Pending Orders"
+          value={stats.pendingOrders}
+          icon={ClockIcon}
+          color="amber"
+        />
+        <StatCard
+          title="Active Services"
+          value={stats.totalServices}
+          icon={ClipboardListIcon}
+          color="emerald"
+        />
+        <StatCard
+          title="Est. Revenue"
+          value={`$${stats.estimatedRevenue.toFixed(2)}`}
+          icon={CurrencyDollarIcon}
+          color="blue"
+        />
+      </div>
 
-            {/* Services Section */}
-            <div className="mb-8">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-medium text-gray-900">
-                  Your Services
-                </h2>
-                <button
-                  onClick={() => setShowAddService(true)}
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
-                >
-                  Add New Service
-                </button>
-              </div>
-
-              {showAddService && (
-                <form onSubmit={handleAddService} className="mb-6 p-4 bg-gray-50 rounded-lg">
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Service Name
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        value={newService.name}
-                        onChange={(e) =>
-                          setNewService({ ...newService, name: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Description
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        value={newService.description}
-                        onChange={(e) =>
-                          setNewService({
-                            ...newService,
-                            description: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Price
-                      </label>
-                      <input
-                        type="number"
-                        required
-                        min="0"
-                        step="0.01"
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        value={newService.price}
-                        onChange={(e) =>
-                          setNewService({
-                            ...newService,
-                            price: parseFloat(e.target.value),
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-4 flex justify-end space-x-3">
-                    <button
-                      type="button"
-                      onClick={() => setShowAddService(false)}
-                      className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
-                    >
-                      Add Service
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {services.length === 0 ? (
-                <p className="text-gray-500">No services added yet.</p>
-              ) : (
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {services.map((service) => (
-                    <div
-                      key={service.id}
-                      className="bg-gray-50 p-4 rounded-lg"
-                    >
-                      <h3 className="font-medium text-gray-900">{service.name}</h3>
-                      <p className="text-sm text-gray-500">
-                        {service.description}
-                      </p>
-                      <p className="text-sm font-medium text-gray-900 mt-2">
-                        ${service.price.toFixed(2)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Orders Section */}
-            <div>
-              <h2 className="text-lg font-medium text-gray-900 mb-4">
-                Recent Orders
-              </h2>
-              {orders.length === 0 ? (
-                <p className="text-gray-500">No orders yet.</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Order ID
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Customer
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Total
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {orders.map((order) => (
-                        <tr key={order.id}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {order.id}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {order.user.name}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ${order.total.toFixed(2)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {order.status}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <select
-                              value={order.status}
-                              onChange={(e) =>
-                                handleStatusUpdate(order.id, e.target.value)
-                              }
-                              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                            >
-                              <option value="PENDING">Pending</option>
-                              <option value="ACCEPTED">Accepted</option>
-                              <option value="IN_PROGRESS">In Progress</option>
-                              <option value="READY">Ready</option>
-                              <option value="DELIVERED">Delivered</option>
-                              <option value="CANCELLED">Cancelled</option>
-                            </select>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 transition-all hover:shadow-md">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 tracking-tight">Welcome back, {session?.user.name}!</h2>
+          <p className="text-gray-600 leading-relaxed">
+            Use the sidebar to manage your laundry services and track incoming orders.
+            You can update order statuses, adjust pickup/delivery times, and expand your service list.
+          </p>
+          <div className="mt-8 flex gap-4">
+            <button
+              onClick={() => router.push("/dashboard/shop/orders")}
+              className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-bold shadow-md hover:bg-indigo-700 transition-all"
+            >
+              View Orders
+            </button>
+            <button
+              onClick={() => router.push("/dashboard/shop/services")}
+              className="bg-white text-indigo-600 border border-indigo-100 px-6 py-2.5 rounded-xl font-bold hover:bg-indigo-50 transition-all"
+            >
+              Manage Services
+            </button>
           </div>
         </div>
-      </main>
+
+        <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 h-full flex flex-col justify-center">
+          <div className="flex items-center gap-4 text-emerald-600 mb-2">
+            <div className="p-2 bg-emerald-50 rounded-lg">
+              <CurrencyDollarIcon className="h-6 w-6" />
+            </div>
+            <span className="text-sm font-black uppercase tracking-widest">Performance Insight</span>
+          </div>
+          <h3 className="text-2xl font-extrabold text-gray-900 mb-2">${stats.estimatedRevenue.toFixed(2)} in pipeline</h3>
+          <p className="text-gray-500 text-sm">Total value of all orders processed so far. Great job!</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ title, value, icon: Icon, color }: { title: string, value: string | number, icon: any, color: string }) {
+  const colorMap: any = {
+    indigo: "bg-indigo-50 text-indigo-600",
+    amber: "bg-amber-50 text-amber-600",
+    emerald: "bg-emerald-50 text-emerald-600",
+    blue: "bg-blue-50 text-blue-600",
+  };
+
+  return (
+    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-5 transition-all hover:shadow-md hover:scale-[1.02]">
+      <div className={`p-3.5 rounded-2xl ${colorMap[color] || colorMap.indigo}`}>
+        <Icon className="h-7 w-7" />
+      </div>
+      <div>
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-0.5">{title}</p>
+        <p className="text-2xl font-black text-gray-900 tracking-tight">{value}</p>
+      </div>
     </div>
   );
 }
